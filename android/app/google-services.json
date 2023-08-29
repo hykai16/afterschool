@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "886864504275",
+    "project_id": "afterschool-c2b8e",
+    "storage_bucket": "afterschool-c2b8e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:886864504275:android:a692d2a7e96c002078bb26",
+        "android_client_info": {
+          "package_name": "com.example.afterschool"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "886864504275-qk5boff3fk5soquh4q47ktnput3kflkl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.afterschool",
+            "certificate_hash": "579c34dceab95a5c92cc383ab2fd23ed7cb77ae7"
+          }
+        },
+        {
+          "client_id": "886864504275-kt9b2cm5vpq6h0n5bctft79h588rlrsj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQjXaNWdW_uqMztb4Cff5GlywE36qdigk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "886864504275-2h69l5rjloa0bf0ncradga95qi3b5ss6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "886864504275-aoqi7inqefoji0071knra88ikifm9ua0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.afterschool"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

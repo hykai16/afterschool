@@ -1,0 +1,55 @@
+name: afterschool
+description: A new Flutter project.
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=2.19.6 <3.0.0'
+
+
+dependencies:
+  flutter_signin_button: ^2.0.0
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.2
+  get: ^4.6.5
+  hexcolor: ^3.0.1
+  flutter_riverpod: ^2.3.6
+  riverpod_annotation: ^2.1.1
+  firebase_core: ^2.15.0
+  firebase_auth: ^4.7.2
+  google_sign_in: ^6.1.4
+  cloud_firestore: ^4.8.4
+  carousel_slider: ^4.2.1
+  smooth_page_indicator: ^1.1.0
+  intl: ^0.18.1
+
+  async:
+  flutter_state_notifier:
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.0
+  riverpod_generator: ^2.2.4
+  build_runner: ^2.3.3
+  custom_lint: ^0.4.0
+  riverpod_lint: ^1.4.0
+  freezed:
+  json_serializable:
+
+flutter:
+  fonts:
+    - family: Dosis
+      fonts:
+      - asset: assets/fonts/Dosis/static/Dosis-ExtraBold.ttf
+        weight: 800
+
+
+  uses-material-design: true
+
