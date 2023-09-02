@@ -1,11 +1,14 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../utils/firebase_service.dart';
 import '../utils/userdata.dart';
 
 class ProfileInputScreen extends StatefulWidget {
+  const ProfileInputScreen({super.key});
+
   @override
   _ProfileInputScreenState createState() => _ProfileInputScreenState();
 }
@@ -34,9 +37,9 @@ class _ProfileInputScreenState extends State<ProfileInputScreen> {
       bio: _bio,
       userID: _userID,
       reference: firebaseService.getUserProfileReference(_userID),
+      // friendRequests: [],
+      // friends: [],
     );
-
-    // TODO: Firebaseにプロフィールデータを保存するロジックを追加
     // プロフィールデータをFirebaseに保存
     await firebaseService.saveUserProfile(userProfile);
   }
@@ -45,33 +48,33 @@ class _ProfileInputScreenState extends State<ProfileInputScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('プロフィール入力'),
+        title: const Text('プロフィール入力'),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextFormField(
-              decoration: InputDecoration(labelText: '名前'),
+              decoration: const InputDecoration(labelText: '名前'),
               onChanged: (value) => _name = value,
             ),
             TextFormField(
-              decoration: InputDecoration(labelText: '学年'),
+              decoration: const InputDecoration(labelText: '学年'),
               onChanged: (value) => _grade = value,
             ),
             TextFormField(
-              decoration: InputDecoration(labelText: '住んでいる地域'),
+              decoration: const InputDecoration(labelText: '住んでいる地域'),
               onChanged: (value) => _location = value,
             ),
             TextFormField(
-              decoration: InputDecoration(labelText: '自己紹介文'),
+              decoration: const InputDecoration(labelText: '自己紹介文'),
               onChanged: (value) => _bio = value,
             ),
-            SizedBox(height: 16.0),
+            const SizedBox(height: 16.0),
             ElevatedButton(
               onPressed: _saveProfile,
-              child: Text('保存'),
+              child: const Text('保存'),
             ),
           ],
         ),

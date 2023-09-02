@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:afterschool/View/login.view.dart';
 import 'package:afterschool/View/newroom.view.dart';
 import 'package:afterschool/View/roomsearch.view.dart';
@@ -21,21 +23,24 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   int _currentIndex = 0;
   final _pageWidgets = [
-    HomePage(),
-    RoomSearchView(),
+    const HomePage(),
+    const RoomSearchView(),
   ];
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
           //  （1） タイトルの指定
-          title: Text("マイページ"),
+          title: const Text("マイページ"),
           centerTitle: true,
           // （2） 背景色の指定
           backgroundColor: GlobalColors.mainColor,
           // （3） 左アイコン
           leading: IconButton(
-            icon: Icon(Icons.logout),
+            icon: const Icon(Icons.logout),
             onPressed: () {
               showDialog<void>(
                   context: context,
@@ -46,10 +51,10 @@ class _HomeViewState extends State<HomeView> {
           ),
           // （4） 右アイコン
           actions: [
-            IconButton(icon: Icon(Icons.add), onPressed: (){
+            IconButton(icon: const Icon(Icons.add), onPressed: (){
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => CreateNewRoom()),
+                MaterialPageRoute(builder: (context) => const CreateNewRoom()),
               );
             }),
           ],
@@ -79,16 +84,16 @@ class MyAlertDialog extends StatelessWidget {
     if (Theme.of(context).platform == TargetPlatform.android) {
       // Androidの場合はAlertDialogを表示
       return AlertDialog(
-        title: Text('ログアウトしますか？'),
+        title: const Text('ログアウトしますか？'),
         actions: <Widget>[
           SimpleDialogOption(
-            child: Text('いいえ'),
+            child: const Text('いいえ'),
             onPressed: () {
               Navigator.pop(context);
             },
           ),
           SimpleDialogOption(
-            child: Text('はい'),
+            child: const Text('はい'),
             onPressed: () async {
               // Google からサインアウト
               await GoogleSignIn().signOut();
@@ -108,16 +113,15 @@ class MyAlertDialog extends StatelessWidget {
       );
     } else {
       return CupertinoAlertDialog(
-        title: Text('ログアウトしますか？'),
+        title: const Text('ログアウトしますか？'),
         actions: <Widget>[
           CupertinoDialogAction(
-            child: Text('いいえ'),
+            child: const Text('いいえ'),
             onPressed: () {
               Navigator.pop(context);
             },
           ),
           CupertinoDialogAction(
-            child: Text('はい'),
             isDestructiveAction: true,
             onPressed: () async {
               // Google からサインアウト
@@ -133,6 +137,7 @@ class MyAlertDialog extends StatelessWidget {
                     (route) => false,
               );
             },
+            child: const Text('はい'),
           )
         ],
       );

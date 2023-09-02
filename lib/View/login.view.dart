@@ -35,7 +35,6 @@ class _LoginViewState extends State<LoginView> {
       try {
         //Google認証フローを起動する
         final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-        print(googleUser);
         //リクエストから認証情報を取得する
         final googleAuth = await googleUser?.authentication;
         //firebaseAuthで認証を行う為、credentialを作成
@@ -49,6 +48,7 @@ class _LoginViewState extends State<LoginView> {
 
         if (userCredential.additionalUserInfo!.isNewUser) {
           //新規ユーザーの場合の処理
+          print("new");
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) {
               return ProfileInputScreen();
@@ -57,6 +57,7 @@ class _LoginViewState extends State<LoginView> {
           );
         } else {
           //既存ユーザーの場合の処理
+          print("exist");
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) {
               //TODO:基本はHOMEView TestはMyPagedayo()

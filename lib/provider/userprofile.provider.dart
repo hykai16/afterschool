@@ -6,15 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/userdata.dart';
 
 final userProfileProvider = FutureProvider<UserProfile>((ref) async {
-  final user = FirebaseAuth.instance.currentUser;
-  //そもそもここが動かないのどうして？？
-  print("動いてんで");
+  final user = await FirebaseAuth.instance.currentUser;
   if (user != null) {
     try {
-      final userDoc = FirebaseFirestore.instance.collection('profiles').doc(user.uid);
+      final userDoc = await FirebaseFirestore.instance.collection('profiles').doc(user.uid);
       final userSnapshot = await userDoc.get();
-      print("ヌルちゃうで");
+      print(userSnapshot);
       if (userSnapshot.exists) {
+        print("get");
         return UserProfile.fromFirestore(userSnapshot);
       }
     } catch (e) {
@@ -24,11 +23,13 @@ final userProfileProvider = FutureProvider<UserProfile>((ref) async {
   return UserProfile(
     name: 'ゲスト',
     grade: 'No Data',
-    iconImageUrl: 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fleaf.aquaplus.jp%2Fproduct%2Fth2x%2Fif_chr2.html&psig=AOvVaw2flXMe5YcfpHqEWYTuJwgw&ust=1693326081014000&source=images&cd=vfe&opi=89978449&ved=0CBAQjRxqFwoTCKC0x6_h_4ADFQAAAAAdAAAAABAD',
+    iconImageUrl: 'https://ascii.jp/img/2023/05/01/3531840/l/f3cf566db48c40e1.png',
     location: 'No Data',
     bio: 'Welcome to Our School',
     userID: 'ex',
     reference: FirebaseFirestore.instance.collection('dummy').doc(), // ダミーの reference を指定
+    // friendRequests: [],
+    // friends: [],
   );
 });
 
@@ -37,6 +38,7 @@ class UserProfileWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.refresh(userProfileProvider);
     final userProfile = ref.watch(userProfileProvider);
     return userProfile.when(
       data: (data) =>

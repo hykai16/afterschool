@@ -57,6 +57,8 @@ class _ProfileInputScreenState extends State<ProfileInputScreen> {
       bio: _bio,
       userID: _userID,
       reference: firebaseService.getUserProfileReference(_userID),
+      // friendRequests: [],
+      // friends: [],
     );
 
 

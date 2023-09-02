@@ -17,11 +17,22 @@ class CreateNewRoom extends StatefulWidget {
 class _CreateNewRoomState extends State<CreateNewRoom> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _passcodeController = TextEditingController();
+
   bool publicSetting = true;
+  bool error = false;
+  String errorText = "未入力の箇所があります";
+
+  bool areAllFieldsFilled() {
+    return _titleController.text.isNotEmpty &&
+        _descriptionController.text.isNotEmpty &&
+        !publicSetting || (!_passcodeController.text.isNotEmpty || _passcodeController.text.length == 4); // パスコードが空でないかつ4桁であることを確認
+  }
 
   void _createChatRoom(BuildContext context) async {
     final title = _titleController.text;
     final description = _descriptionController.text;
+    final passcord = _passcodeController.text;
     late String userID;
     late String currentUser;
 
@@ -41,6 +52,7 @@ class _CreateNewRoomState extends State<CreateNewRoom> {
         'creator': currentUser,
         'participants': [],
         'public': publicSetting,
+        'passcode': passcord,
         'createdAt': Timestamp.now(),
         // 他のフィールドも初期値を設定
       });
@@ -56,6 +68,7 @@ class _CreateNewRoomState extends State<CreateNewRoom> {
         creator: currentUser,
         participants: [],
         public: publicSetting,
+        passcode: passcord,
         createdAt: Timestamp.now(),
         reference: newChatRoomRef,
         seatsRef: seatsCollection, // seatsコレクションへの参照をセット
@@ -63,6 +76,7 @@ class _CreateNewRoomState extends State<CreateNewRoom> {
 
       //ファイアーベースに登録
       await firebaseService.createNewRoom(chatRoom);
+
 
       // チャットルーム作成後に前の画面に戻る
       //TODO:画面更新されないのをなんとかする
@@ -74,27 +88,27 @@ class _CreateNewRoomState extends State<CreateNewRoom> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('新しいチャットルーム作成'),
+        title: const Text('新しいチャットルーム作成'),
         backgroundColor: GlobalColors.mainColor,
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextFormField(
               controller: _titleController,
-              decoration: InputDecoration(labelText: 'タイトル'),
+              decoration: const InputDecoration(labelText: 'タイトル'),
             ),
-            SizedBox(height: 16.0),
+            const SizedBox(height: 16.0),
             TextFormField(
               controller: _descriptionController,
-              decoration: InputDecoration(labelText: '説明'),
+              decoration: const InputDecoration(labelText: '説明'),
             ),
-            SizedBox(height: 16.0),
+            const SizedBox(height: 16.0),
             ListTile(
               leading: null,
-              title: Text("公開 / 非公開"),
+              title: const Text("公開 / 非公開"),
               trailing: CupertinoSwitch(
                 value: publicSetting,
                 onChanged: (newValue) {
@@ -104,10 +118,37 @@ class _CreateNewRoomState extends State<CreateNewRoom> {
                 },
               ),
             ),
-            SizedBox(height: 16.0),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // もし showPasscodeField が true の場合にのみ表示
+                if (!publicSetting)
+                  TextFormField(
+                    controller: _passcodeController,
+                    decoration: const InputDecoration(labelText: '4桁のパスコードを入力してください'),
+                    keyboardType: TextInputType.number, // 数字のみ入力可能にする
+                    maxLength: 4, // 4桁のみ入力可能にする
+                  ),
+                const SizedBox(height: 16.0),
+              ],
+            ),
+            const SizedBox(height: 16.0),
             ElevatedButton(
-              onPressed: () => _createChatRoom(context),
-              child: Text('作成'),
+              onPressed: (){
+                if (areAllFieldsFilled()) {
+                  _createChatRoom(context);
+                } else {
+                  error = true;
+                  setState(() {});
+                }
+              },
+              child: const Text('作成'),
+            ),
+            Text(
+              error? errorText : "",
+              style: const TextStyle(
+                color:Colors.red,
+              ),
             ),
           ],
         ),

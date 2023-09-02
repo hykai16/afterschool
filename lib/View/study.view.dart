@@ -1,10 +1,15 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:afterschool/Widget/timer.dart';
+import 'package:afterschool/provider/someoneprofile.provider.dart';
+import 'package:afterschool/utils/userdata.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../utils/chatroomdata.dart';
 import '../utils/getProfileData.dart';
@@ -13,7 +18,7 @@ import 'chat.view.dart';
 
 class StudyView extends StatefulWidget {
   final ChatRoom chatRoom;
-  StudyView({required this.chatRoom});
+  const StudyView({super.key, required this.chatRoom});
 
   @override
   _StudyViewState createState() => _StudyViewState();
@@ -27,15 +32,18 @@ class _StudyViewState extends State<StudyView> {
   late DateTime currentTime;
   //var currentTime = DateTime.now();
 
+
   @override
   void initState() {
     super.initState();
     _getProfileData();
     //widgetはStatefulで使用
-    startTime = widget.chatRoom.createdAt.toDate();
+    final chatRoom = widget.chatRoom;
+    startTime = chatRoom.createdAt.toDate();
     startTimer();
     checkUserOccupiedSeat();
   }
+
 
   void updateCurrentTime() {
     setState(() {
@@ -134,19 +142,16 @@ class _StudyViewState extends State<StudyView> {
       vacateSeat(currentUserOccupiedSeatNumber);
     }
 
-    await seatDoc.set({'userID': userID});
-    await seatDoc.set({'aim':textInput});
+    await seatDoc.set({'userID': userID,'aim':textInput});
     setState(() {
       isCurrentUserOccupyingSeat = true;
       currentUserOccupiedSeatNumber = seatNumber;
     });
   }
 
-
   void vacateSeat(int seatNumber) async {
     final seatDoc = widget.chatRoom.seatsRef.doc('$seatNumber');
-    await seatDoc.update({'userID': null}); // ユーザーIDをnullに設定
-    await seatDoc.update({'aim':null});
+    await seatDoc.update({'userID': null,'aim':null}); // ユーザーIDをnullに設定
     setState(() {
       isCurrentUserOccupyingSeat = false;
       currentUserOccupiedSeatNumber = -1;
@@ -178,24 +183,53 @@ class _StudyViewState extends State<StudyView> {
     // });
   }
 
-
-  //改良の必要性
-  Stream<List<String>?> getSomeoneProfileDataStream(int seatNumber) {
-    final seatRefs = widget.chatRoom.seatsRef;
+  /*　超課題
+  final someoneProfileDataStreamProvider = StreamProvider.autoDispose.family<List<String>?, int>((ref, seatNumber) {
+    final currentChatRoom = ref.watch(currentChatRoomProvider(何が入る？));
+    final seatRefs = currentChatRoom.seatsRef;
     final seatDoc = seatRefs.doc('$seatNumber');
 
     return seatDoc.snapshots().asyncMap((seatSnapshot) async {
       if (seatSnapshot.exists) {
-        List<String>? profileData = await ProfileUtils.getProfileData(seatSnapshot["userID"]);
-        return profileData;
+
+        // List<String>? profileData = await ProfileUtils.getProfileData(seatSnapshot['userID']);
+        // return profileData;
       } else {
         print('Seat document does not exist.');
         return null;
       }
     });
-  }
+  });
+  */
 
+  // StreamBuilder<UserProfile?> getSomeoneProfileDataStream(int seatNumber) {
+  //   final seatRefs = widget.chatRoom.seatsRef;
+  //   final seatDoc = seatRefs.doc('$seatNumber');
 
+  //   return StreamBuilder<UserProfile?>(
+  //     stream: seatDoc.snapshots().asyncMap((seatSnapshot) async {
+  //       if (seatSnapshot.exists) {
+  //         return someoneProfileProvider(seatSnapshot);
+  //       } else {
+  //         print('Seat document does not exist.');
+  //         return null;
+  //       }
+  //     }),
+  //     builder: (context, snapshot) {
+  //       if (snapshot.connectionState == ConnectionState.waiting) {
+  //         return CircularProgressIndicator(); // データ読み込み中はローディング表示
+  //       } else if (snapshot.hasError) {
+  //         return Text('Error: ${snapshot.error}');
+  //       } else if (!snapshot.hasData) {
+  //         return Text('No data available.');
+  //       } else {
+  //         final profileData = snapshot.data;
+  //         // profileData を使ってウィジェットを構築
+  //         // 例えば、CircleAvatar などのウィジェットを返す
+  //       }
+  //     },
+  //   );
+  // }
 
 
   //戻るボタンで離席
@@ -214,25 +248,9 @@ class _StudyViewState extends State<StudyView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: RichText(
-          text: TextSpan(
-            style: TextStyle(
-              fontSize: 20, // 変数部分のフォントサイズを調整
-            ),
-            children: [
-              TextSpan(
-                text: isStudyMode? '休憩まで　':'休憩中　',
-              ),
-              TextSpan(
-                text: '${remainingTime.inMinutes}:${(remainingTime.inSeconds % 60).toString().padLeft(2, '0')}',
-                style: TextStyle(
-                  fontSize: 30, // 変数部分のフォントサイズを大きく設定
-                  fontWeight: FontWeight.bold, // ボールド体に設定
-                  fontFeatures: [FontFeature.tabularFigures()],
-                ),
-              ),
-            ],
-          ),
+        title:TimerDisplay(
+          isStudyMode: isStudyMode,
+          remainingTime: remainingTime,
         ),
         backgroundColor: isStudyMode ? GlobalColors.mainColor : GlobalColors.restcolor,
         automaticallyImplyLeading: false, // 戻るボタンを非表示にする
@@ -263,7 +281,7 @@ class _StudyViewState extends State<StudyView> {
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: new Row(
+          child: Row(
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
@@ -287,17 +305,17 @@ class _StudyViewState extends State<StudyView> {
       ),
       body: Column(
         children: [
-          SizedBox(height: 16.0),
+          const SizedBox(height: 16.0),
           Text(
             widget.chatRoom.title,
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 24.0),
+          const SizedBox(height: 24.0),
           // 生成したウィジェットのリストを使用して展開
           Expanded(
             child: GridView.count(
               crossAxisCount: 2,
-              children: generateSeatWidgets(),
+              children: generateSeatWidgets(), //ここはあってる
             ),
           ),
           SizedBox(height: 8.0),
@@ -310,7 +328,7 @@ class _StudyViewState extends State<StudyView> {
             },
             child: Text('休憩モードへ'),
           ),
-          SizedBox(height: 32.0),
+          const SizedBox(height: 32.0),
         ],
       ),
     );
@@ -331,7 +349,7 @@ class _StudyViewState extends State<StudyView> {
       final seatNumber = index + 1;
       final isOccupied = someoneOccupyingSeats[index];
       final currentUserOccupied = currentUserOccupiedSeatNumber == seatNumber;
-      final buttonText = currentUserOccupied ? nameText : isOccupied
+      final buttonText = currentUserOccupied ? '離席' : isOccupied
           ? '誰か'
           : '着席';
 
@@ -344,13 +362,15 @@ class _StudyViewState extends State<StudyView> {
               context: context,
               builder: (BuildContext context) {
                 return AlertDialog(
-                  title: Text('目標を入力しよう！'),
+                  title: const Text('目標を入力しよう！'),
                   content: TextField(
                     controller: _textInputController,
                   ),
                   actions: [
                     TextButton(
                       onPressed: () {
+                        //TODO:index番目のUserIDがnullかどうかで、判別
+                        print(index);
                         setState(() {
                           _textInput = _textInputController.text;
 
@@ -368,123 +388,96 @@ class _StudyViewState extends State<StudyView> {
 
       return Column(
         children: [
-          Center(
-            child: GestureDetector(
-              onTap: onPressed,
-              child: StreamBuilder<List<String>?>(
-                stream: getSomeoneProfileDataStream(index),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return CircularProgressIndicator();
-                  } else if (snapshot.hasError) {
-                    return CircleAvatar(
-                      backgroundImage: NetworkImage("https://yt3.googleusercontent.com/CK6GCZPybwzJwuQfPFiL0b9-Ep7tAZ_MQf_GhZgq2POTULUNyeVUa5ERhebNGBIf-bM0ukipxow=s900-c-k-c0x00ffffff-no-rj"),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance
+                  .collection('chat_rooms')
+                  .doc(widget.chatRoom.id) // チャットルームドキュメントにアクセス
+                  .collection('seats') // 投稿サブコレクションにアクセス
+                  .snapshots(),
+              // ここで受け取っている snapshot に stream で流れてきたデータが入っています。
+              builder: (context, snapshot) {
+                // docs には Collection に保存されたすべてのドキュメントが入ります。
+                // 取得までには時間がかかるのではじめは null が入っています。
+                // null の場合は空配列が代入されるようにしています。
+                final docs = snapshot.data?.docs ?? [];
+                    return Column(
+                      children: [
+                        ParentWidget(seat: Seat.fromSnapshot(docs[index])),
+                        //ParentWidget(userID: Seat.fromSnapshot(docs[index]).userID),
+                        SizedBox(height: 2.0),
+                        ElevatedButton(
+                          onPressed: onPressed,
+                          style: ElevatedButton.styleFrom(
+                            primary: (isCurrentUserOccupyingSeat && currentUserOccupiedSeatNumber == seatNumber)
+                                ? Colors.green
+                                // ignore: unnecessary_null_comparison
+                                : (Seat.fromSnapshot(docs[index]).userID != null)
+                                ? Colors.blue
+                                : Colors.red,
+                            elevation: 16,
+                          ),
+                          child: Text(buttonText),
+                        )
+                      ],
                     );
-                  } else if (snapshot.hasData && snapshot.data != null) {
-                    List<String> profileData = snapshot.data!;
-                    return CircleAvatar(
-                      backgroundImage: (isCurrentUserOccupyingSeat && currentUserOccupiedSeatNumber == seatNumber)
-                          ? NetworkImage(user.photoURL!)
-                          : NetworkImage(profileData[1]),
-                    );
-                  } else {
-                    return CircleAvatar(
-                      backgroundImage: NetworkImage("https://yt3.googleusercontent.com/CK6GCZPybwzJwuQfPFiL0b9-Ep7tAZ_MQf_GhZgq2POTULUNyeVUa5ERhebNGBIf-bM0ukipxow=s900-c-k-c0x00ffffff-no-rj"),
-                    );
-                  }
-                },
-              ),
+              },
             ),
           ),
-          SizedBox(height: 2.0),
-          ElevatedButton(
-            onPressed: onPressed,
-            style: ElevatedButton.styleFrom(
-              primary: (isCurrentUserOccupyingSeat && currentUserOccupiedSeatNumber == seatNumber)
-                  ? Colors.green
-                  : Colors.red,
-              elevation: 16,
-            ),
-            child: Text(buttonText),
-          )
         ],
       );
     });
-
-
-
-// List<Widget> generateSeatWidgets() {
-  //   return List.generate(8, (index) {
-  //     final seatNumber = index + 1;
-  //     final isOccupied = someoneOccupyingSeats[index];
-  //     final currentUserOccupied = currentUserOccupiedSeatNumber == seatNumber;
-  //     final buttonText = currentUserOccupied ? nameText : isOccupied ? '誰か' : '着席';
-  //     onPressed() {
-  //       if (currentUserOccupied) {
-  //         vacateSeat(seatNumber);
-  //       } else if (!isOccupied) {
-  //         // テキスト入力フォームを表示し、テキストを座席に登録
-  //         showDialog(
-  //             context: context,
-  //             builder: (BuildContext context) {
-  //               return AlertDialog(
-  //                 title: Text('目標を入力しよう！'),
-  //                 content: TextField(
-  //                   controller: _textInputController,
-  //                 ),
-  //                 actions: [
-  //                   TextButton(
-  //                     onPressed: () {
-  //                       setState(() {
-  //                         _textInput = _textInputController.text;
-  //
-  //                         occupySeat(seatNumber, _textInput); // テキストを座席に登録
-  //                         Navigator.pop(context); // ダイアログを閉じる
-  //                       });
-  //                     },
-  //                     child: Text('登録'),
-  //                   ),
-  //                 ],
-  //               );
-  //             });
-  //       }
-  //     }
-  //     // final onPressed = currentUserOccupied
-  //     //     ? () => vacateSeat(seatNumber)
-  //     //     : isOccupied
-  //     //     ? () => null
-  //     //     : () => occupySeat(seatNumber);
-  //
-  //
-  //
-  //
-  //     return Column(
-  //       children: [
-  //         Center(
-  //           child: GestureDetector(
-  //             onTap: onPressed,
-  //             child: CircleAvatar (
-  //               backgroundImage: (isCurrentUserOccupyingSeat && currentUserOccupiedSeatNumber == seatNumber)
-  //                   ? NetworkImage(user.photoURL!)
-  //                   : someoneOccupyingSeats[index]
-  //                   ? null//TODO:ここに他の人のアイコンをFirebaseから引っ張ってくる
-  //                   : NetworkImage("https://yt3.googleusercontent.com/CK6GCZPybwzJwuQfPFiL0b9-Ep7tAZ_MQf_GhZgq2POTULUNyeVUa5ERhebNGBIf-bM0ukipxow=s900-c-k-c0x00ffffff-no-rj"),
-  //             ),
-  //           ),
-  //         ),
-  //         SizedBox(height: 2.0),
-  //         ElevatedButton(
-  //           onPressed: onPressed,
-  //           style: ElevatedButton.styleFrom(
-  //             primary: (isCurrentUserOccupyingSeat && currentUserOccupiedSeatNumber == seatNumber)
-  //                 ? Colors.green
-  //                 : Colors.red,
-  //             elevation: 16,
-  //           ),
-  //           child: Text(buttonText),
-  //         )
-  //       ],
-  //     );
-  //   });
   }
 }
+
+class ParentWidget extends ConsumerWidget {
+  //final String userID;
+  final Seat seat;
+
+  const ParentWidget({required this.seat});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userProfileAsyncValue = ref.watch(someoneProfileProvider(seat.userID));
+
+    return userProfileAsyncValue.when(
+      loading: () => const CircularProgressIndicator(),
+      error: (error, stackTrace) => Text('プロフィールデータの取得中にエラーが発生しました: $error'),
+      data: (userProfile) {
+        return SeatWidget(userProfile: userProfile,seat: seat);
+      },
+    );
+  }
+}
+
+class SeatWidget extends StatelessWidget {
+  const SeatWidget({
+    super.key,
+    required this.userProfile, // ユーザープロファイル情報を受け取る
+    required this.seat,
+  });
+
+  final UserProfile userProfile; // ユーザープロファイル情報を保持する
+  final Seat seat;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Center(
+            child:CircleAvatar(
+              backgroundImage: NetworkImage(userProfile?.iconImageUrl ?? "https://yt3.googleusercontent.com/CK6GCZPybwzJwuQfPFiL0b9-Ep7tAZ_MQf_GhZgq2POTULUNyeVUa5ERhebNGBIf-bM0ukipxow=s900-c-k-c0x00ffffff-no-rj"),
+
+            ),
+        ),
+        const SizedBox(height: 3.0),
+        Text(userProfile.name == "ゲスト" ? "" : userProfile.name),
+        const SizedBox(height: 3.0),
+        //TODO:もしかしてストリームにしないといけない？
+        Text(seat.aim == "デフォルトのAim" ? "" :seat.aim),
+      ],
+    );
+  }
+}
+
+

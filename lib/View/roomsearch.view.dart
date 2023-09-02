@@ -1,3 +1,4 @@
+import 'package:afterschool/View/passcord.view.dart';
 import 'package:afterschool/View/study.view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -15,10 +16,39 @@ class RoomSearchView extends StatefulWidget {
 
 class _RoomSearchViewState extends State<RoomSearchView> {
   final chatRooms = <ChatRoom>[]; // chatRoomsリストを作成
+  List<ChatRoom> _searchChatRoomsList = []; //空のchatRoomsリストを作成
+  bool _showOnlyPublic = false; // チェックボックスの初期状態
+  final TextEditingController _searchWordController = TextEditingController();
   Stream<QuerySnapshot<Map<String, dynamic>>> chatRoomsStream = FirebaseFirestore.instance
       .collection('chat_rooms')
-      .orderBy('participants', descending: true)
+      .orderBy('public', descending: true)
       .snapshots();
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    search("");
+  }
+
+  void search(String s) {
+    setState(() {
+      if (s.trim().isEmpty) {
+        _searchChatRoomsList = chatRooms;
+      } else {
+        _searchChatRoomsList = [];
+        for (int i = 0; i < chatRooms.length; i++) {
+          //roomのタイトルが入力された文字を含んでいればlistに追加
+          //あんま自信なし
+          if (chatRooms[i].title.contains(s)) {
+            _searchChatRoomsList.add(chatRooms[i]);
+
+          }
+        }
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,27 +57,30 @@ class _RoomSearchViewState extends State<RoomSearchView> {
         child: Column(
           children: [
             TextField(
+              controller: _searchWordController,
               decoration: const InputDecoration(
                 hintText: '検索キーワードを入力してください',
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
-              onChanged: (value) async {
-                final keyword = value;
-                // Firestoreのコレクション参照
-                final chatRoomsCollection = FirebaseFirestore.instance.collection('chat_rooms');
-
-                // 検索キーワードに合致するチャットルームを取得
-                QuerySnapshot<Map<String, dynamic>> querySnapshot = await chatRoomsCollection
-                    .where('title', isGreaterThanOrEqualTo: keyword) // キーワード以上の文字を含む
-                    .where('title', isLessThan: keyword + 'z') // キーワード以下の文字を含む
-                    .get();
-
-                // QuerySnapshotからChatRoomリストを作成
-                List<ChatRoom> chatRooms = querySnapshot.docs.map((doc) => ChatRoom.fromSnapshot(doc)).toList();
-              },
+              onSubmitted: search, //エンターキー押したらサーチ開始
             ),
-            const SizedBox(height: 16.0),
+
+            Row(
+              children: [
+                Text('公開のみ表示'),
+                Checkbox(
+                  value: _showOnlyPublic,
+                  onChanged: (newValue) {
+                    setState(() {
+                      _showOnlyPublic = newValue ?? false;
+                      search(_searchWordController.text); // チェックボックスが変更されたら再検索
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8.0),
             // 検索結果を表示するウィジェットをここに配置
             Expanded(
               child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -62,22 +95,46 @@ class _RoomSearchViewState extends State<RoomSearchView> {
                   } else {
                     chatRooms.clear(); // リストをクリアして新たに追加
                     chatRooms.addAll(snapshot.data!.docs.map((doc) => ChatRoom.fromSnapshot(doc)));
+                    // フィルタリングされたリストを作成
+                    final filteredChatRooms = _showOnlyPublic
+                        ? _searchChatRoomsList.where((chatRoom) => chatRoom.public).toList()
+                        : _searchChatRoomsList;
 
                     return ListView.builder(
-                      itemCount: chatRooms.length,
+                      itemCount: filteredChatRooms.length,
                       itemBuilder: (context, index) {
-                        final chatRoom = chatRooms[index];
+                        final chatRoom = filteredChatRooms[index]; // chatRoomIndexを直接使用
                         return ListTile(
-                          //TODO:participantsとmaxparticipantsを載せる
-                          title: Text(chatRoom.title),
+                          title: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text(chatRoom.title),
+                              Spacer(),
+                              if (!chatRoom.public) // 非公開の場合のみ鍵アイコンを表示
+                                Icon(Icons.lock, color: Colors.black), // 鍵アイコン
+                            ],
+                          ),
                           subtitle: Text(chatRoom.introduce),
                           onTap: () {
-                            // TODO:タップされたチャットルームに遷移する処理
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => StudyView(chatRoom: chatRoom)), // パラメータを渡して遷移
-                            );
-                          },
+                            if (chatRoom.public == false) {
+                              // パスコードが設定されている場合、パスコード入力画面に遷移
+                              // ここでパスコード入力画面への遷移処理を追加
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) =>
+                                    PasscodeScreen(chatRoom:chatRoom)
+                                )
+                              );
+                            } else {
+                              // パスコードが設定されていない場合、通常のChatRoomに遷移
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) =>
+                                    StudyView(
+                                        chatRoom: chatRoom)), // パラメータを渡して遷移
+                              );
+                            }
+                          }
                         );
                       },
                     );

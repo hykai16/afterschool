@@ -1,4 +1,5 @@
 import 'package:afterschool/View/splash.view.dart';
+import 'package:afterschool/utils/userdata.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -82,6 +83,8 @@ final postsReference = FirebaseFirestore.instance.collection('posts').withConver
     return value.toMap(); // 先ほど適宜した toMap がここで活躍します。
   }),
 );
+
+
 
 
 

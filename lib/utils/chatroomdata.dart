@@ -59,11 +59,29 @@ class ChatRoom {
 }
 
 class Seat{
-  final bool occupied;
+  final String userID;
   final String aim;
 
   Seat({
-    required this.occupied,
+    required this.userID,
     required this.aim
   });
+
+  factory Seat.fromSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot) {
+    final data = snapshot.data()!;
+    final id = snapshot.id; // FirestoreのドキュメントIDを取得
+    final userID = data["userID"] as String? ?? "デフォルトのUserID";
+    final aim = data["aim"] as String? ?? "デフォルトのAim";
+    return Seat(
+      userID: userID,
+      aim: aim,
+    );
+  }
+
+  Map<String,dynamic> toMap(){
+    return{
+      'userID':userID,
+      'aim':aim,
+    };
+  }
 }

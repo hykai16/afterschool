@@ -141,15 +141,72 @@ class PostWidget extends StatelessWidget {
 
   final Post post;
 
+  //TODO:改良
+  // void _onIconTap(int seatNumber) {
+  //   // タップされた座席のユーザーIDを取得
+  //   final seatDoc = widget.chatRoom.seatsRef.doc('$seatNumber');
+  //   seatDoc.get().then((seatSnapshot) {
+  //     if (seatSnapshot.exists) {
+  //       final userId = seatSnapshot['userID'];
+  //       if (userId != null) {
+  //         // タップされたユーザーのプロフィール情報を表示するウィジェットを表示
+  //         _showUserProfileDialog(userId);
+  //       }
+  //     }
+  //   });
+  // }
+  //
+  // // 3. プロフィール情報を表示するウィジェット
+  // void _showUserProfileDialog(String userId) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       // ユーザープロフィール情報を取得するロジック
+  //       // 必要な情報は、ユーザー名、アイコン、バイオなどです
+  //       // ProfileUtils.getProfileData(userId) などを使用して取得できます
+  //
+  //       return AlertDialog(
+  //         title: Text('ユーザープロフィール'),
+  //         content: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             CircleAvatar(
+  //               backgroundImage: NetworkImage(userProfile?.iconImageUrl ?? "デフォルトのアイコンURL"),
+  //             ),
+  //             const SizedBox(height: 8.0),
+  //             Text(userProfile?.name ?? "ユーザー名なし"),
+  //             const SizedBox(height: 8.0),
+  //             Text(userProfile?.bio ?? "バイオなし"),
+  //           ],
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () {
+  //               Navigator.pop(context); // ダイアログを閉じる
+  //             },
+  //             child: Text('閉じる'),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
         children: [
-          CircleAvatar(
-            backgroundImage: NetworkImage(
-              post.posterImageUrl,
+          InkWell(
+            onTap: () {
+              // TODO:プロフィール表示
+
+            },
+            child: CircleAvatar(
+              backgroundImage: NetworkImage(
+                post.posterImageUrl,
+              ),
             ),
           ),
           const SizedBox(width: 8),

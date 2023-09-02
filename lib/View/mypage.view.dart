@@ -107,9 +107,10 @@ class _HomePageState extends State<HomePage> {
                   icon: Icon(Icons.logout)),
             ),
             const Positioned(
-              right: 150,
-              top: 50,
-              child: UserProfileWidget()
+                right: 150,
+                top: 50,
+                //絶望
+                child: UserProfileWidget()
             ),
           ]),
           const SizedBox(

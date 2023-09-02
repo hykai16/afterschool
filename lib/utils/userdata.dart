@@ -11,6 +11,8 @@ class UserProfile {
     required this.bio,
     required this.userID,
     required this.reference,
+    // required this.friendRequests,
+    // required this.friends,
   });
 
   factory UserProfile.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot) {
@@ -26,6 +28,8 @@ class UserProfile {
       bio: map['bio'],
       userID: map['userID'],
       reference: snapshot.reference, // 注意。reference は map ではなく snapshot に入っています。
+      // friendRequests:map['friendRequests'],
+      //   friends:map['friends']
     );
   }
 
@@ -37,6 +41,8 @@ class UserProfile {
       'location': location,
       'bio': bio,
       'userID':userID,
+      // 'friendRequests':friendRequests,
+      // 'friends':friends,
       // 'reference': reference, reference は field に含めなくてよい
       // field に含めなくても DocumentSnapshot に reference が存在するため
     };
@@ -56,4 +62,25 @@ class UserProfile {
 
   /// Firestoreのどこにデータが存在するかを表すpath情報
   final DocumentReference reference;
+
+  // // フレンドリクエスト一覧
+  // final List<String> friendRequests;
+  //
+  // // フレンドリスト
+  // final List<String> friends;
+
+  // // フレンドリクエストを送信
+  // Future<void> sendFriendRequest(String userId) async {
+  //   // Firestoreにフレンドリクエストを追加する処理
+  // }
+  //
+  // // フレンドリクエストを受信
+  // Future<void> acceptFriendRequest(String userId) async {
+  //   // フレンドリクエストを承認してFirestoreのデータを更新する処理
+  // }
+  //
+  // // フレンドリストからユーザーを削除
+  // Future<void> removeFriend(String userId) async {
+  //   // Firestoreからフレンドを削除する処理
+  // }
 }
