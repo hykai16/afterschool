@@ -32,42 +32,53 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          //  （1） タイトルの指定
-          title: const Text("マイページ"),
-          centerTitle: true,
-          // （2） 背景色の指定
-          backgroundColor: GlobalColors.mainColor,
-          // （3） 左アイコン
-          leading: IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              showDialog<void>(
-                  context: context,
-                  builder: (_) {
-                    return const MyAlertDialog();
-                  });
-            }
-          ),
-          // （4） 右アイコン
-          actions: [
-            IconButton(icon: const Icon(Icons.add), onPressed: (){
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CreateNewRoom()),
-              );
-            }),
-          ],
-        ),
+        // appBar: AppBar(
+        //   //  （1） タイトルの指定
+        //   title: Text("After School"),
+        //   centerTitle: true,
+        //   // （2） 背景色の指定
+        //   backgroundColor: Colors.white,
+        //   // （3） 左アイコン
+        //   leading: IconButton(
+        //     icon: const Icon(Icons.logout),
+        //     onPressed: () {
+        //       showDialog<void>(
+        //           context: context,
+        //           builder: (_) {
+        //             return const MyAlertDialog();
+        //           });
+        //     }
+        //   ),
+        //   // （4） 右アイコン
+        //   actions: [
+        //     IconButton(icon: const Icon(Icons.add), onPressed: (){
+        //       Navigator.push(
+        //         context,
+        //         MaterialPageRoute(builder: (context) => const CreateNewRoom()),
+        //       );
+        //     }),
+        //   ],
+        // ),
         body: _pageWidgets.elementAt(_currentIndex),
-        bottomNavigationBar: BottomNavigationBar(
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'フィード'),
-            BottomNavigationBarItem(icon: Icon(Icons.search), label: 'ルームサーチ'),
-          ],
-          currentIndex: _currentIndex,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
+        bottomNavigationBar: SizedBox(
+          height: 87,
+          child: BottomNavigationBar(
+            selectedItemColor: GlobalColors.mainColor,
+            selectedLabelStyle: TextStyle(
+              fontFamily: 'Kiwi'
+            ),
+            unselectedLabelStyle: TextStyle(
+              fontFamily: 'Kiwi'
+            ),
+            iconSize: 18,
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(icon: Icon(Icons.person), label: 'mypage'),
+              BottomNavigationBarItem(icon: Icon(Icons.border_color_sharp), label: 'rooms'),
+            ],
+            currentIndex: _currentIndex,
+            onTap: _onItemTapped,
+            type: BottomNavigationBarType.fixed,
+          ),
         ),
     );
   }

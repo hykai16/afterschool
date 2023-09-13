@@ -1,11 +1,12 @@
 import 'package:afterschool/View/passcord.view.dart';
 import 'package:afterschool/View/study.view.dart';
+import 'package:afterschool/utils/global.colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../utils/chatroomdata.dart';
 import 'chat.view.dart';
-
+import 'newroom.view.dart';
 
 class RoomSearchView extends StatefulWidget {
   const RoomSearchView({super.key});
@@ -19,10 +20,11 @@ class _RoomSearchViewState extends State<RoomSearchView> {
   List<ChatRoom> _searchChatRoomsList = []; //空のchatRoomsリストを作成
   bool _showOnlyPublic = false; // チェックボックスの初期状態
   final TextEditingController _searchWordController = TextEditingController();
-  Stream<QuerySnapshot<Map<String, dynamic>>> chatRoomsStream = FirebaseFirestore.instance
-      .collection('chat_rooms')
-      .orderBy('public', descending: true)
-      .snapshots();
+  Stream<QuerySnapshot<Map<String, dynamic>>> chatRoomsStream =
+      FirebaseFirestore.instance
+          .collection('chat_rooms')
+          .orderBy('public', descending: true)
+          .snapshots();
 
   @override
   void initState() {
@@ -42,7 +44,6 @@ class _RoomSearchViewState extends State<RoomSearchView> {
           //あんま自信なし
           if (chatRooms[i].title.contains(s)) {
             _searchChatRoomsList.add(chatRooms[i]);
-
           }
         }
       }
@@ -53,22 +54,70 @@ class _RoomSearchViewState extends State<RoomSearchView> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: EdgeInsets.only(
+          top: 50,
+          right: 20,
+          left: 20,
+        ),
         child: Column(
           children: [
-            TextField(
+            Row(
+              children: [
+                Text(
+                  'rooms',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 30,
+                      fontFamily: 'Dosis',
+                      color: GlobalColors.mainColor),
+                ),
+                Icon(
+                  Icons.arrow_drop_down,
+                  color: GlobalColors.mainColor,
+                ),
+                SizedBox(
+                  width: 190,
+                ),
+                IconButton(
+                    icon: Icon(Icons.add,
+                    color: GlobalColors.mainColor),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const CreateNewRoom()),
+                      );
+                    }),
+              ],
+            ),
+            SizedBox(
+              height: 10,
+            ),
+            TextFormField(
               controller: _searchWordController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
+                contentPadding: EdgeInsets.all(1),
                 hintText: '検索キーワードを入力してください',
+                hintStyle: TextStyle(
+                  fontFamily: 'Kiwi',
+                  fontSize: 15,
+                ),
                 prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(13),
+                ),
               ),
-              onSubmitted: search, //エンターキー押したらサーチ開始
+              onChanged: search, //エンターキー押したらサーチ開始
             ),
 
             Row(
               children: [
-                Text('公開のみ表示'),
+                Text(
+                  '公開のみ表示',
+                  style: TextStyle(
+                    fontFamily: 'Kiwi',
+                  ),
+                ),
                 Checkbox(
                   value: _showOnlyPublic,
                   onChanged: (newValue) {
@@ -94,47 +143,64 @@ class _RoomSearchViewState extends State<RoomSearchView> {
                     return const Text('チャットルームが見つかりません');
                   } else {
                     chatRooms.clear(); // リストをクリアして新たに追加
-                    chatRooms.addAll(snapshot.data!.docs.map((doc) => ChatRoom.fromSnapshot(doc)));
+                    chatRooms.addAll(snapshot.data!.docs
+                        .map((doc) => ChatRoom.fromSnapshot(doc)));
                     // フィルタリングされたリストを作成
                     final filteredChatRooms = _showOnlyPublic
-                        ? _searchChatRoomsList.where((chatRoom) => chatRoom.public).toList()
+                        ? _searchChatRoomsList
+                            .where((chatRoom) => chatRoom.public)
+                            .toList()
                         : _searchChatRoomsList;
 
                     return ListView.builder(
                       itemCount: filteredChatRooms.length,
                       itemBuilder: (context, index) {
-                        final chatRoom = filteredChatRooms[index]; // chatRoomIndexを直接使用
-                        return ListTile(
-                          title: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Text(chatRoom.title),
-                              Spacer(),
-                              if (!chatRoom.public) // 非公開の場合のみ鍵アイコンを表示
-                                Icon(Icons.lock, color: Colors.black), // 鍵アイコン
-                            ],
-                          ),
-                          subtitle: Text(chatRoom.introduce),
-                          onTap: () {
-                            if (chatRoom.public == false) {
-                              // パスコードが設定されている場合、パスコード入力画面に遷移
-                              // ここでパスコード入力画面への遷移処理を追加
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) =>
-                                    PasscodeScreen(chatRoom:chatRoom)
-                                )
-                              );
-                            } else {
-                              // パスコードが設定されていない場合、通常のChatRoomに遷移
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) =>
-                                    StudyView(
-                                        chatRoom: chatRoom)), // パラメータを渡して遷移
-                              );
-                            }
-                          }
+                        final chatRoom =
+                            filteredChatRooms[index]; // chatRoomIndexを直接使用
+                        return Container(
+                          decoration: BoxDecoration(
+                              border: Border(
+                            bottom: BorderSide(width: 1.0, color: Colors.grey),
+                          )),
+                          child: ListTile(
+                              title: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    chatRoom.title,
+                                    style: TextStyle(fontFamily: 'Kiwi'),
+                                  ),
+                                  Spacer(),
+                                  if (!chatRoom.public) // 非公開の場合のみ鍵アイコンを表示
+                                    //Icon(Icons.lock, color: Colors.black),
+                                    Image.asset(
+                                      "assets/images/lock.png",
+                                    height: 40,
+                                    width: 40,
+                                    )
+                                  // 鍵アイコン
+                                ],
+                              ),
+                              subtitle: Text(chatRoom.introduce),
+                              onTap: () {
+                                if (chatRoom.public == false) {
+                                  // パスコードが設定されている場合、パスコード入力画面に遷移
+                                  // ここでパスコード入力画面への遷移処理を追加
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => PasscodeScreen(
+                                              chatRoom: chatRoom)));
+                                } else {
+                                  // パスコードが設定されていない場合、通常のChatRoomに遷移
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => StudyView(
+                                            chatRoom: chatRoom)), // パラメータを渡して遷移
+                                  );
+                                }
+                              }),
                         );
                       },
                     );

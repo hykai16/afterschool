@@ -32,6 +32,10 @@ target 'Runner' do
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  # Firebase/CoreとFirebase/Firestoreを追加
+  pod 'Firebase/Core'
+  pod 'Firebase/Firestore'
+  platform :ios, '11.0'
 end
 
 post_install do |installer|

@@ -194,22 +194,114 @@ class PostWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCurrentUser = FirebaseAuth.instance.currentUser!.uid == post.posterId;
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
         children: [
+          !isCurrentUser?
           InkWell(
             onTap: () {
-              // TODO:プロフィール表示
-
+// TODO:タップされた人の情報を取得
+//               showModalBottomSheet(
+//                 //モーダルの背景の色、透過
+//                   backgroundColor: Colors.transparent,
+//                   //ドラッグ可能にする（高さもハーフサイズからフルサイズになる様子）
+//                   isScrollControlled: true,
+//                   context: context,
+//                   builder: (BuildContext context) {
+//                     return Container(
+//                       margin: const EdgeInsets.only(top: 64),
+//                       decoration: const BoxDecoration(
+//                         //モーダル自体の色
+//                         color: Colors.white,
+//                         //角丸にする
+//                         borderRadius: BorderRadius.only(
+//                           topLeft: Radius.circular(20),
+//                           topRight: Radius.circular(20),
+//                         ),
+//                       ),
+//                       child: Stack(
+//                         children: [
+//                           UserProfileScreen(userProfile: userProfile),
+//                           Positioned(
+//                             top: 16,
+//                             right: 16,
+//                             child: IconButton(
+//                               icon: Icon(Icons.close),
+//                               onPressed: () {
+//                                 Navigator.of(context).pop();
+//                               },
+//                             ),
+//                           ),
+//                         ],
+//                       ),
+//                     );
+//                   });
             },
             child: CircleAvatar(
               backgroundImage: NetworkImage(
                 post.posterImageUrl,
               ),
             ),
+          ):
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      // toDate() で Timestamp から DateTime に変換できます。
+                      DateFormat('MM/dd HH:mm').format(post.createdAt.toDate()),
+                      style: const TextStyle(fontSize: 10),
+                    ),
+                    Text(
+                      post.posterName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Expanded(child: Container()),
+                    IconButton(
+                      onPressed: () {
+                        // 削除は reference に対して delete() を呼ぶだけでよい。
+                        post.reference.delete();
+                      },
+                      icon: const Icon(
+                        Icons.delete,
+                        size: 15,
+                      ),
+                    ),
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          // 角丸にするにはこれを追加します。
+                          // 4 の数字を大きくするともっと丸くなります。
+                          borderRadius: BorderRadius.circular(40),
+                          // 色はここで変えられます
+                          // [100] この数字を小さくすると色が薄くなります。
+                          // [条件式] ? A : B の三項演算子を使っています。
+                          color: FirebaseAuth.instance.currentUser!.uid == post.posterId ? Colors.blueAccent[100]: Colors.white,
+                        ),
+                        child: Text(post.text),
+                      ),
+                    ),
+                  ],
+                ),
+                // List の中の場合は if 文であっても {} この波かっこはつけなくてよい
+              ],
+            ),
           ),
           const SizedBox(width: 8),
+          !isCurrentUser?
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,29 +323,83 @@ class PostWidget extends StatelessWidget {
                     ),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    // 角丸にするにはこれを追加します。
-                    // 4 の数字を大きくするともっと丸くなります。
-                    borderRadius: BorderRadius.circular(40),
-                    // 色はここで変えられます
-                    // [100] この数字を小さくすると色が薄くなります。
-                    // [条件式] ? A : B の三項演算子を使っています。
-                    color: FirebaseAuth.instance.currentUser!.uid == post.posterId ? Colors.blue[100]: Colors.white,
-                  ),
-                  child: Text(post.text),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          // 角丸にするにはこれを追加します。
+                          // 4 の数字を大きくするともっと丸くなります。
+                          borderRadius: BorderRadius.circular(40),
+                          // 色はここで変えられます
+                          // [100] この数字を小さくすると色が薄くなります。
+                          // [条件式] ? A : B の三項演算子を使っています。
+                          color: FirebaseAuth.instance.currentUser!.uid == post.posterId ? Colors.blueAccent[100]: Colors.white,
+                        ),
+                        child: Text(post.text),
+                      ),
+                    ),
+                    if (FirebaseAuth.instance.currentUser!.uid == post.posterId)
+                      IconButton(
+                        onPressed: () {
+                          // 削除は reference に対して delete() を呼ぶだけでよい。
+                          post.reference.delete();
+                        },
+                        icon: const Icon(
+                          Icons.delete,
+                          size: 15,
+                        ),
+                      ),
+                  ],
                 ),
                 // List の中の場合は if 文であっても {} この波かっこはつけなくてよい
-                if (FirebaseAuth.instance.currentUser!.uid == post.posterId)
-                  IconButton(
-                    onPressed: () {
-                      // 削除は reference に対して delete() を呼ぶだけでよい。
-                      post.reference.delete();
-                    },
-                    icon: const Icon(Icons.delete),
-                  ),
               ],
+            ),
+          ):
+          InkWell(
+            onTap: () {
+// TODO:タップされた人の情報を取得
+//               showModalBottomSheet(
+//                 //モーダルの背景の色、透過
+//                   backgroundColor: Colors.transparent,
+//                   //ドラッグ可能にする（高さもハーフサイズからフルサイズになる様子）
+//                   isScrollControlled: true,
+//                   context: context,
+//                   builder: (BuildContext context) {
+//                     return Container(
+//                       margin: const EdgeInsets.only(top: 64),
+//                       decoration: const BoxDecoration(
+//                         //モーダル自体の色
+//                         color: Colors.white,
+//                         //角丸にする
+//                         borderRadius: BorderRadius.only(
+//                           topLeft: Radius.circular(20),
+//                           topRight: Radius.circular(20),
+//                         ),
+//                       ),
+//                       child: Stack(
+//                         children: [
+//                           UserProfileScreen(userProfile: userProfile),
+//                           Positioned(
+//                             top: 16,
+//                             right: 16,
+//                             child: IconButton(
+//                               icon: Icon(Icons.close),
+//                               onPressed: () {
+//                                 Navigator.of(context).pop();
+//                               },
+//                             ),
+//                           ),
+//                         ],
+//                       ),
+//                     );
+//                   });
+            },
+            child: CircleAvatar(
+              backgroundImage: NetworkImage(
+                post.posterImageUrl,
+              ),
             ),
           ),
         ],

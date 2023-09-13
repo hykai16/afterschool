@@ -30,6 +30,8 @@ dependencies:
 
   async:
   flutter_state_notifier:
+  share: ^2.0.4
+  bordered_text: ^2.0.0
 
 dev_dependencies:
   flutter_test:
@@ -44,6 +46,7 @@ dev_dependencies:
   json_serializable:
   flutter_cache_manager: ^3.3.1
   provider: ^6.0.5
+  firebase_dynamic_links: ^0.5.3
 
 flutter:
   assets:
@@ -53,6 +56,12 @@ flutter:
       fonts:
       - asset: assets/fonts/Dosis/static/Dosis-ExtraBold.ttf
         weight: 800
+    - family: chalks
+      fonts:
+        - asset: assets/fonts/chalks/Chalk-S-JP.otf
+    - family: Kiwi
+      fonts:
+        - asset: assets/fonts/Kiwi/KiwiMaru-Regular.ttf
 
 
   uses-material-design: true

@@ -21,7 +21,13 @@ final someoneProfileProvider = FutureProvider.family<UserProfile,String>((ref,id
     location: 'No Data',
     bio: 'Welcome to Our School',
     userID: 'ex',
+    hobby: '',
+    school: '',
+    favsubject: '',
     reference: FirebaseFirestore.instance.collection('dummy').doc(), // ダミーの reference を指定
+    lastLoginTime:Timestamp.now(), // 追加: 最終ログイン時間
+    dailyStudyTime:0, // 追加: デイリーの学習時間（例: 分単位）
+    totalStudyTime:0, // 追加: これまでのトータル学習時間（例: 分単位）
     // friendRequests: [],
     // friends: [],
   );

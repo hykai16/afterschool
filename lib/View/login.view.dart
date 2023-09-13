@@ -47,8 +47,6 @@ class _LoginViewState extends State<LoginView> {
         await FirebaseAuth.instance.signInWithCredential(credential);
 
         if (userCredential.additionalUserInfo!.isNewUser) {
-          //新規ユーザーの場合の処理
-          print("new");
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) {
               return ProfileInputScreen();
@@ -56,8 +54,6 @@ class _LoginViewState extends State<LoginView> {
                 (route) => false,
           );
         } else {
-          //既存ユーザーの場合の処理
-          print("exist");
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) {
               //TODO:基本はHOMEView TestはMyPagedayo()

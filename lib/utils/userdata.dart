@@ -10,7 +10,13 @@ class UserProfile {
     required this.location,
     required this.bio,
     required this.userID,
+    required this.hobby,
+    required this.school,
+    required this.favsubject,
     required this.reference,
+    required this.lastLoginTime, // 追加: 最終ログイン時間
+    required this.dailyStudyTime, // 追加: デイリーの学習時間
+    required this.totalStudyTime, // 追加: これまでのトータル学習時間
     // required this.friendRequests,
     // required this.friends,
   });
@@ -27,7 +33,13 @@ class UserProfile {
       location: map['location'],
       bio: map['bio'],
       userID: map['userID'],
+      hobby: map['hobby'],
+      school: map['school'],
+      favsubject: map['favsubject'],
       reference: snapshot.reference, // 注意。reference は map ではなく snapshot に入っています。
+      lastLoginTime: map['lastLoginTime'], // 追加: 最終ログイン時間
+      dailyStudyTime: map['dailyStudyTime'], // 追加: デイリーの学習時間
+      totalStudyTime: map['totalStudyTime'], // 追加: これまでのトータル学習時間
       // friendRequests:map['friendRequests'],
       //   friends:map['friends']
     );
@@ -41,6 +53,12 @@ class UserProfile {
       'location': location,
       'bio': bio,
       'userID':userID,
+      'hobby': hobby,
+      'school': school,
+      'favsubject': favsubject,
+      'lastLoginTime':lastLoginTime,
+      'dailyStudyTime':dailyStudyTime,
+      'totalStudyTime':totalStudyTime,
       // 'friendRequests':friendRequests,
       // 'friends':friends,
       // 'reference': reference, reference は field に含めなくてよい
@@ -60,8 +78,18 @@ class UserProfile {
 
   final String userID;
 
+  final String hobby;
+
+  final String school;
+
+  final String favsubject;
+
   /// Firestoreのどこにデータが存在するかを表すpath情報
   final DocumentReference reference;
+
+  final Timestamp lastLoginTime; // 追加: 最終ログイン時間
+  final int dailyStudyTime; // 追加: デイリーの学習時間（例: 分単位）
+  final int totalStudyTime; // 追加: これまでのトータル学習時間（例: 分単位）
 
   // // フレンドリクエスト一覧
   // final List<String> friendRequests;

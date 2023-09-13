@@ -5,12 +5,14 @@ import 'dart:ui';
 
 import 'package:afterschool/Widget/timer.dart';
 import 'package:afterschool/provider/someoneprofile.provider.dart';
+import 'package:afterschool/utils/firebase_service.dart';
 import 'package:afterschool/utils/userdata.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../Widget/profilewidget.dart';
 import '../utils/chatroomdata.dart';
 import '../utils/getProfileData.dart';
 import '../utils/global.colors.dart';
@@ -18,6 +20,7 @@ import 'chat.view.dart';
 
 class StudyView extends StatefulWidget {
   final ChatRoom chatRoom;
+
   const StudyView({super.key, required this.chatRoom});
 
   @override
@@ -30,8 +33,12 @@ class _StudyViewState extends State<StudyView> {
   late Duration remainingTime; // 残り時間
   late Timer timer; // タイマーオブジェクト
   late DateTime currentTime;
-  //var currentTime = DateTime.now();
+  int studyingTime = 0;
+  int minutes = 0;
+  int seconds = 0;
+  bool isCurrentUserOccupyingSeat = false;
 
+  //var currentTime = DateTime.now();
 
   @override
   void initState() {
@@ -43,7 +50,6 @@ class _StudyViewState extends State<StudyView> {
     startTimer();
     checkUserOccupiedSeat();
   }
-
 
   void updateCurrentTime() {
     setState(() {
@@ -63,17 +69,22 @@ class _StudyViewState extends State<StudyView> {
     final elapsedTime = currentTime.difference(createdAt);
 
     //258時間が残る（258クールタイムが終わった）
-    final elapsedPeriods = elapsedTime.inMinutes ~/ (modeDurationStudy + modeDurationBreak).inMinutes;
+    final elapsedPeriods = elapsedTime.inMinutes ~/
+        (modeDurationStudy + modeDurationBreak).inMinutes;
     //0:21:20　分以下が残る
-    final remainingPeriodTime = elapsedTime - Duration(minutes: elapsedPeriods * (modeDurationStudy + modeDurationBreak).inMinutes);
+    final remainingPeriodTime = elapsedTime -
+        Duration(
+            minutes: elapsedPeriods *
+                (modeDurationStudy + modeDurationBreak).inMinutes);
 
     //remainingPeriodTimeによって、モードを分けたい
-    if(remainingPeriodTime < modeDurationStudy){
+    if (remainingPeriodTime < modeDurationStudy) {
       isStudyMode = true;
-        remainingTime = modeDurationStudy - remainingPeriodTime;
-    }else{
+      remainingTime = modeDurationStudy - remainingPeriodTime;
+    } else {
       isStudyMode = false;
-        remainingTime = modeDurationBreak - (remainingPeriodTime - modeDurationStudy);
+      remainingTime =
+          modeDurationBreak - (remainingPeriodTime - modeDurationStudy);
     }
 
     timer = Timer.periodic(Duration(seconds: 1), (timer) {
@@ -83,6 +94,9 @@ class _StudyViewState extends State<StudyView> {
       // print(isStudyMode);
 
       if (remainingTime.inMinutes == 0 && remainingTime.inSeconds == 0) {
+        //TODO:勉強時間が送られる
+        FirebaseService.updateStudyData(FirebaseAuth.instance.currentUser!.uid, studyingTime, studyingTime);
+        studyingTime = 0;
         timer.cancel();
         startTimer(); // タイマーを先に再スタート
         print("リセット実行");
@@ -97,16 +111,31 @@ class _StudyViewState extends State<StudyView> {
       } else {
         setState(() {
           remainingTime = remainingTime - Duration(seconds: 1);
+          if(isCurrentUserOccupyingSeat && isStudyMode){
+            studyingTime += 1;
+            seconds = studyingTime % 60;
+            minutes = studyingTime ~/ 60;
+          }
           print(remainingTime);
         });
       }
     });
   }
+
   //時間ここまで
 
-  bool isCurrentUserOccupyingSeat = false;
+
   int currentUserOccupiedSeatNumber = -1;
-  List<bool> someoneOccupyingSeats = [false,false,false,false,false,false,false,false];
+  List<bool> someoneOccupyingSeats = [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ];
 
   //シート設定
   Future<void> checkUserOccupiedSeat() async {
@@ -119,7 +148,7 @@ class _StudyViewState extends State<StudyView> {
       final seatSnapshot = await seatDoc.get();
       //座席があって、ユーザーIDが一致する
       if (seatSnapshot.exists && seatSnapshot['userID'] == userID) {
-        someoneOccupyingSeats[seatNumber-1] = true;
+        someoneOccupyingSeats[seatNumber - 1] = true;
         setState(() {
           isCurrentUserOccupyingSeat = true;
           currentUserOccupiedSeatNumber = seatNumber;
@@ -127,22 +156,24 @@ class _StudyViewState extends State<StudyView> {
         break;
       } else if (seatSnapshot.exists && seatSnapshot['userID'] != null) {
         // 別のユーザーが席に座っている場合、フラグを設定
-        someoneOccupyingSeats[seatNumber-1] = true;
+        someoneOccupyingSeats[seatNumber - 1] = true;
         break;
       }
     }
   }
 
-  void occupySeat(int seatNumber,String textInput) async {
+  void occupySeat(int seatNumber, String textInput) async {
     final userID = FirebaseAuth.instance.currentUser!.uid;
     final seatDoc = widget.chatRoom.seatsRef.doc('$seatNumber');
+    //TODO:呼び出し場所合っていますか？
+    updateDailySeatingTime(isCurrentUserOccupyingSeat);
 
     // すでに座っている席がある場合、その席を解放する
     if (isCurrentUserOccupyingSeat) {
       vacateSeat(currentUserOccupiedSeatNumber);
     }
 
-    await seatDoc.set({'userID': userID,'aim':textInput});
+    await seatDoc.set({'userID': userID, 'aim': textInput});
     setState(() {
       isCurrentUserOccupyingSeat = true;
       currentUserOccupiedSeatNumber = seatNumber;
@@ -151,22 +182,59 @@ class _StudyViewState extends State<StudyView> {
 
   void vacateSeat(int seatNumber) async {
     final seatDoc = widget.chatRoom.seatsRef.doc('$seatNumber');
-    await seatDoc.update({'userID': null,'aim':null}); // ユーザーIDをnullに設定
+    await seatDoc.update({'userID': null, 'aim': null}); // ユーザーIDをnullに設定
+    FirebaseService.updateStudyData(FirebaseAuth.instance.currentUser!.uid, studyingTime, studyingTime);
     setState(() {
       isCurrentUserOccupyingSeat = false;
       currentUserOccupiedSeatNumber = -1;
+      studyingTime = 0;
     });
+  }
+
+  // データベースへの書き込み（着席時に呼び出される関数）
+  void updateDailySeatingTime(bool isSeated) async {
+    final userID = FirebaseAuth.instance.currentUser!.uid;
+    final userDoc = FirebaseFirestore.instance.collection('users').doc(userID);
+    final currentDate = DateTime.now();
+    final currentDateString =
+        "${currentDate.year}-${currentDate.month}-${currentDate.day}";
+
+    // ユーザーのデータを取得
+    final userSnapshot = await userDoc.get();
+
+    if (userSnapshot.exists) {
+      final userData = userSnapshot.data() as Map<String, dynamic>;
+
+      // 日毎の着席時間を取得または初期化
+      final dailySeatingTimes =
+          userData['daily_seating_times'] as Map<String, dynamic>? ?? {};
+
+      if (isSeated) {
+        // 現在の日付に対応する日毎の着席時間を更新
+        final currentSeatingTime =
+            dailySeatingTimes[currentDateString] as int? ?? 0;
+        dailySeatingTimes[currentDateString] =
+            currentSeatingTime + 1; // 1分単位で着席時間を記録（例）
+      }
+
+      // 更新
+      await userDoc.update({
+        'daily_seating_times': dailySeatingTimes,
+      });
+    }
   }
 
   //personaldata取得
   final user = FirebaseAuth.instance.currentUser!;
   final imano_loginshiteru_userno_id = FirebaseAuth.instance.currentUser!.uid;
+
   //List<Map<String, dynamic>> _profileData = [];
   String nameText = "";
   String iconImageURL = "";
 
   void _getProfileData() async {
-    List<String>? profileData = await ProfileUtils.getProfileData(imano_loginshiteru_userno_id);
+    List<String>? profileData =
+        await ProfileUtils.getProfileData(imano_loginshiteru_userno_id);
     setState(() {
       if (profileData != null) {
         nameText = profileData[0];
@@ -175,65 +243,10 @@ class _StudyViewState extends State<StudyView> {
         print('Profile data not available or an error occurred.');
       }
     });
-    // ProfileUtils.getProfileData(imano_loginshiteru_userno_id, (name, iconUrl) {
-    //   setState(() {
-    //     nameText = name;
-    //     iconImageURL = iconUrl;
-    //   });
-    // });
   }
 
-  /*　超課題
-  final someoneProfileDataStreamProvider = StreamProvider.autoDispose.family<List<String>?, int>((ref, seatNumber) {
-    final currentChatRoom = ref.watch(currentChatRoomProvider(何が入る？));
-    final seatRefs = currentChatRoom.seatsRef;
-    final seatDoc = seatRefs.doc('$seatNumber');
-
-    return seatDoc.snapshots().asyncMap((seatSnapshot) async {
-      if (seatSnapshot.exists) {
-
-        // List<String>? profileData = await ProfileUtils.getProfileData(seatSnapshot['userID']);
-        // return profileData;
-      } else {
-        print('Seat document does not exist.');
-        return null;
-      }
-    });
-  });
-  */
-
-  // StreamBuilder<UserProfile?> getSomeoneProfileDataStream(int seatNumber) {
-  //   final seatRefs = widget.chatRoom.seatsRef;
-  //   final seatDoc = seatRefs.doc('$seatNumber');
-
-  //   return StreamBuilder<UserProfile?>(
-  //     stream: seatDoc.snapshots().asyncMap((seatSnapshot) async {
-  //       if (seatSnapshot.exists) {
-  //         return someoneProfileProvider(seatSnapshot);
-  //       } else {
-  //         print('Seat document does not exist.');
-  //         return null;
-  //       }
-  //     }),
-  //     builder: (context, snapshot) {
-  //       if (snapshot.connectionState == ConnectionState.waiting) {
-  //         return CircularProgressIndicator(); // データ読み込み中はローディング表示
-  //       } else if (snapshot.hasError) {
-  //         return Text('Error: ${snapshot.error}');
-  //       } else if (!snapshot.hasData) {
-  //         return Text('No data available.');
-  //       } else {
-  //         final profileData = snapshot.data;
-  //         // profileData を使ってウィジェットを構築
-  //         // 例えば、CircleAvatar などのウィジェットを返す
-  //       }
-  //     },
-  //   );
-  // }
-
-
   //戻るボタンで離席
-  void _onBackButtonPressed()  {
+  void _onBackButtonPressed() {
     // 離席処理を行う
     if (isCurrentUserOccupyingSeat) {
       vacateSeat(currentUserOccupiedSeatNumber);
@@ -243,95 +256,96 @@ class _StudyViewState extends State<StudyView> {
     Navigator.pop(context);
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title:TimerDisplay(
-          isStudyMode: isStudyMode,
-          remainingTime: remainingTime,
-        ),
-        backgroundColor: isStudyMode ? GlobalColors.mainColor : GlobalColors.restcolor,
-        automaticallyImplyLeading: false, // 戻るボタンを非表示にする
-        leading: Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.arrow_back),
-              onPressed: _onBackButtonPressed,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: isStudyMode ? GlobalColors.mainColor : GlobalColors.restcolor,
-        onPressed: () {},
-        child: Icon(Icons.add),
-      ),
-      bottomNavigationBar: BottomAppBar(
-        color:isStudyMode ? GlobalColors.mainColor : GlobalColors.restcolor,
-        //color: Theme.of(context).primaryColor,
-        notchMargin: 6.0,
-        shape: AutomaticNotchedShape(
-          RoundedRectangleBorder(),
-          StadiumBorder(
-            side: BorderSide(),
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: TimerDisplay(
+            isStudyMode: isStudyMode,
+            remainingTime: remainingTime,
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
+          backgroundColor:
+              isStudyMode ? GlobalColors.mainColor : GlobalColors.restcolor,
+          automaticallyImplyLeading: false, // 戻るボタンを非表示にする
+          leading: Row(
+            children: [
               IconButton(
-                icon: Icon(
-                  Icons.person_outline,
-                  color: Colors.white,
-                ),
-                onPressed: () {},
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.info_outline,
-                  color: Colors.white,
-                ),
-                onPressed: () {},
+                icon: Icon(Icons.arrow_back),
+                onPressed: _onBackButtonPressed,
               ),
             ],
           ),
         ),
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 16.0),
-          Text(
-            widget.chatRoom.title,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        body: Container(
+          child: Stack(
+            children: [
+              Container(
+                decoration: const BoxDecoration(
+                  color: Colors.brown,
+                  image: DecorationImage(
+                    image: AssetImage('assets/images/black.png'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Column(
+                children: [
+                  const SizedBox(height: 8.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center, // テキストを中央に配置
+                    children: [
+                      Text(
+                        widget.chatRoom.title + "  ",
+                        style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'chalks',
+                            color: Colors.white),
+                      ),
+                      //TODO:最後に!つける
+                      if (!isStudyMode)
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      ChatView(chatRoom: widget.chatRoom)),
+                            );
+                          },
+                          style:
+                              ElevatedButton.styleFrom(primary: Colors.white),
+                          child: Text(
+                            '休憩しよう！',
+                            style: TextStyle(fontFamily: 'Chalks',
+                            color: Colors.black,),
+                          ),
+                        )
+                      else
+                        Text('$minutes:${seconds.toString().padLeft(2, '0')}',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'chalks',
+                          fontSize: 20,
+                        ),),
+                    ],
+                  ),
+                  const SizedBox(height: 24.0),
+                  // 生成したウィジェットのリストを使用して展開
+                  Expanded(
+                    child: GridView.count(
+                      crossAxisCount: 2,
+                      childAspectRatio: (2 / 3),
+                      children: generateSeatWidgets(), //ここはあってる
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: 24.0),
-          // 生成したウィジェットのリストを使用して展開
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              children: generateSeatWidgets(), //ここはあってる
-            ),
-          ),
-          SizedBox(height: 8.0),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ChatView(chatRoom: widget.chatRoom)),
-              );
-            },
-            child: Text('休憩モードへ'),
-          ),
-          const SizedBox(height: 32.0),
-        ],
-      ),
-    );
+        ));
   }
 
   // 着席ボタンを押した際のテキスト入力のコントローラー
@@ -340,6 +354,7 @@ class _StudyViewState extends State<StudyView> {
 
   @override
   void dispose() {
+    timer?.cancel(); // タイマーをキャンセル
     _textInputController.dispose(); // コントローラーを解放
     super.dispose();
   }
@@ -349,9 +364,11 @@ class _StudyViewState extends State<StudyView> {
       final seatNumber = index + 1;
       final isOccupied = someoneOccupyingSeats[index];
       final currentUserOccupied = currentUserOccupiedSeatNumber == seatNumber;
-      final buttonText = currentUserOccupied ? '離席' : isOccupied
-          ? '誰か'
-          : '着席';
+      final buttonText = currentUserOccupied
+          ? '離席'
+          : isOccupied
+              ? '誰か'
+              : '着席';
 
       void onPressed() {
         if (currentUserOccupied) {
@@ -366,20 +383,25 @@ class _StudyViewState extends State<StudyView> {
                   content: TextField(
                     controller: _textInputController,
                   ),
-                  actions: [
+                  actions: <Widget>[
                     TextButton(
+                      child: Text('キャンセル'),
                       onPressed: () {
-                        //TODO:index番目のUserIDがnullかどうかで、判別
-                        print(index);
-                        setState(() {
-                          _textInput = _textInputController.text;
-
-                          occupySeat(seatNumber, _textInput); // テキストを座席に登録
-                          Navigator.pop(context); // ダイアログを閉じる
-                        });
+                        Navigator.pop(context);
                       },
-                      child: Text('登録'),
                     ),
+                    TextButton(
+                        child: Text('OK'),
+                        onPressed: () {
+                          setState(
+                            () {
+                              _textInput = _textInputController.text;
+
+                              occupySeat(seatNumber, _textInput); // テキストを座席に登録
+                              Navigator.pop(context);
+                            },
+                          );
+                        })
                   ],
                 );
               });
@@ -396,31 +418,39 @@ class _StudyViewState extends State<StudyView> {
                   .collection('seats') // 投稿サブコレクションにアクセス
                   .snapshots(),
               // ここで受け取っている snapshot に stream で流れてきたデータが入っています。
+
               builder: (context, snapshot) {
                 // docs には Collection に保存されたすべてのドキュメントが入ります。
                 // 取得までには時間がかかるのではじめは null が入っています。
                 // null の場合は空配列が代入されるようにしています。
-                final docs = snapshot.data?.docs ?? [];
+                if (snapshot.hasData) {
+                    final docs = snapshot.data!.docs ?? [];
                     return Column(
-                      children: [
+                    children: [
+                      if (docs.isNotEmpty)
                         ParentWidget(seat: Seat.fromSnapshot(docs[index])),
-                        //ParentWidget(userID: Seat.fromSnapshot(docs[index]).userID),
-                        SizedBox(height: 2.0),
-                        ElevatedButton(
-                          onPressed: onPressed,
-                          style: ElevatedButton.styleFrom(
-                            primary: (isCurrentUserOccupyingSeat && currentUserOccupiedSeatNumber == seatNumber)
-                                ? Colors.green
-                                // ignore: unnecessary_null_comparison
-                                : (Seat.fromSnapshot(docs[index]).userID != null)
-                                ? Colors.blue
-                                : Colors.red,
-                            elevation: 16,
-                          ),
-                          child: Text(buttonText),
-                        )
-                      ],
-                    );
+                      ElevatedButton(
+                        onPressed: onPressed,
+                        style: ElevatedButton.styleFrom(
+                          primary: (isCurrentUserOccupyingSeat &&
+                                  currentUserOccupiedSeatNumber == seatNumber)
+                              ? Colors.green
+                              : (Seat.fromSnapshot(docs[index]).userID != null)
+                                  ? Colors.blue
+                                  : Colors.red,
+                          elevation: 16,
+                        ),
+                        child: Text(
+                          buttonText,
+                          style: TextStyle(fontFamily: 'Chalks'),
+                        ),
+                      )
+                    ],
+                  );
+                } else {
+                  // データがまだ利用できない場合のローディングインジケータ
+                  return CircularProgressIndicator();
+                }
               },
             ),
           ),
@@ -438,13 +468,14 @@ class ParentWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userProfileAsyncValue = ref.watch(someoneProfileProvider(seat.userID));
+    final userProfileAsyncValue =
+        ref.watch(someoneProfileProvider(seat.userID));
 
     return userProfileAsyncValue.when(
       loading: () => const CircularProgressIndicator(),
       error: (error, stackTrace) => Text('プロフィールデータの取得中にエラーが発生しました: $error'),
       data: (userProfile) {
-        return SeatWidget(userProfile: userProfile,seat: seat);
+        return SeatWidget(userProfile: userProfile, seat: seat);
       },
     );
   }
@@ -462,22 +493,162 @@ class SeatWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Center(
-            child:CircleAvatar(
-              backgroundImage: NetworkImage(userProfile?.iconImageUrl ?? "https://yt3.googleusercontent.com/CK6GCZPybwzJwuQfPFiL0b9-Ep7tAZ_MQf_GhZgq2POTULUNyeVUa5ERhebNGBIf-bM0ukipxow=s900-c-k-c0x00ffffff-no-rj"),
-
+    return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(
+            width: 150,
+            height: 80,
+            padding: const EdgeInsets.all(16),
+            //吹き出し
+            decoration: const ShapeDecoration(
+              color: Colors.white,
+              shape: BubbleBorder(),
             ),
-        ),
-        const SizedBox(height: 3.0),
-        Text(userProfile.name == "ゲスト" ? "" : userProfile.name),
-        const SizedBox(height: 3.0),
-        //TODO:もしかしてストリームにしないといけない？
-        Text(seat.aim == "デフォルトのAim" ? "" :seat.aim),
-      ],
-    );
+            //TODO:文字数制限
+            child: Text(
+              seat.aim == "デフォルトのAim"? "空席だよ" : seat.aim,
+              style: const TextStyle(
+                  fontFamily: 'Chalks',
+                fontSize: 12,
+              ),
+              maxLines: 2, // 最大行数を2に設定
+              overflow: TextOverflow.ellipsis, // 範囲を超えた場合に省略記号（...）を表示
+            ),
+          ),
+          Text(
+            seat.userID == "デフォルトのUserID" ? "" : userProfile.name,
+            style: const TextStyle(
+              fontFamily: 'Chalks',
+              fontSize: 16,
+              color: Colors.white,
+            ),
+          ),
+          Stack(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  print(seat.userID);
+                  if (userProfile.name != "ゲスト") {
+                    // サークルアバターがタップされたときの処理をここに追加
+                    // showDialog(
+                    //   context: context,
+                    //   builder: (_) {
+                    //     return UserProfileWidget(userProfile: userProfile);
+                    //   },
+                    // );
+                    showModalBottomSheet(
+                        //モーダルの背景の色、透過
+                        backgroundColor: Colors.transparent,
+                        //ドラッグ可能にする（高さもハーフサイズからフルサイズになる様子）
+                        isScrollControlled: true,
+                        context: context,
+                        builder: (BuildContext context) {
+                          return Container(
+                            margin: const EdgeInsets.only(top: 64),
+                            decoration: const BoxDecoration(
+                              //モーダル自体の色
+                              color: Colors.white,
+                              //角丸にする
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(20),
+                                topRight: Radius.circular(20),
+                              ),
+                            ),
+                            child: Stack(
+                              children: [
+                                UserProfileScreen(userProfile: userProfile),
+                                Positioned(
+                                  top: 16,
+                                  right: 16,
+                                  child: IconButton(
+                                    icon: Icon(Icons.close),
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        });
+                  }
+                },
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      child: const Image(
+                        image: AssetImage('assets/images/desk.png'),
+                        fit: BoxFit.fill,
+                      ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      left: 40,
+                      child: CircleAvatar(
+                        // で入る時は画像を変更する
+                        backgroundImage: NetworkImage(userProfile
+                                .iconImageUrl ??
+                            "https://yt3.googleusercontent.com/CK6GCZPybwzJwuQfPFiL0b9-Ep7tAZ_MQf_GhZgq2POTULUNyeVUa5ERhebNGBIf-bM0ukipxow=s900-c-k-c0x00ffffff-no-rj"),
+                        radius: 18,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ]));
+
+    //   Column(
+    //   children: [
+    //     Center(
+    //         child:CircleAvatar(
+    //           backgroundImage: NetworkImage(userProfile?.iconImageUrl ?? "https://yt3.googleusercontent.com/CK6GCZPybwzJwuQfPFiL0b9-Ep7tAZ_MQf_GhZgq2POTULUNyeVUa5ERhebNGBIf-bM0ukipxow=s900-c-k-c0x00ffffff-no-rj"),
+    //
+    //         ),
+    //     ),
+    //     const SizedBox(height: 3.0),
+    //     Text(userProfile.name == "ゲスト" ? "" : userProfile.name),
+    //     const SizedBox(height: 3.0),
+    //     //TODO:もしかしてストリームにしないといけない？
+    //     Text(seat.aim == "デフォルトのAim" ? "" :seat.aim),
+    //   ],
+    // );
   }
 }
 
+class BubbleBorder extends ShapeBorder {
+  final bool usePadding;
 
+  const BubbleBorder({this.usePadding = true});
+
+  @override
+  EdgeInsetsGeometry get dimensions =>
+      EdgeInsets.only(bottom: usePadding ? 12 : 0);
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) {
+    return Path();
+  }
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
+    final r =
+        Rect.fromPoints(rect.topLeft, rect.bottomRight - const Offset(0, 12));
+    return Path()
+      ..addRRect(RRect.fromRectAndRadius(r, Radius.circular(8)))
+      ..moveTo(r.bottomCenter.dx - 10, r.bottomCenter.dy)
+      ..relativeLineTo(10, 12)
+      ..relativeLineTo(10, -12)
+      ..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {}
+
+  @override
+  ShapeBorder scale(double t) => this;
+}
